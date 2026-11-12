@@ -60,6 +60,7 @@ These features have less priority and may get implemented depending on difficult
 **Zoom/Pan:**
 - Control panel to zoom in, zoom out, reset zoom
 - After zooming in, user is able to pan around
+- Full screen option to make map container full width of the page
 <h3 style="color: red">Not To Do</h3>
 These features will not be necessary to implement
 
