@@ -1,4 +1,4 @@
-# StockVizMap
+# StocksVizMap
 Financial markets visualised in a heat map grid
 
 ## Original Inspiration
