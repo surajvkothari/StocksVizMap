@@ -8,7 +8,17 @@
     <link rel="stylesheet" href="main.css">
 </head>
 <body>
-    <h1>Stocks Viz Map</h1>
+    <h1 class="title">Stocks Viz Map</h1>
+
+    <div class="lg:container p-0">
+        <div id="control-panel" class="row g-0 justify-content-end">
+            <button class="col-1">Zoom In</button>
+            <button class="col-1">Zoom Out</button>
+            <button class="col-1">Reset Zoom</button>
+            <button class="col-1">Full Screen</button>            
+        </div>
+        <canvas id="map"></canvas>
+    </div>
 
     <script src="main.js"></script>
     
