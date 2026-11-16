@@ -226,8 +226,8 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
     let stocks_unit_end_x;
     let stocks_unit_end_y;
 
-    let stocks_label_start_x;
-    let stocks_label_start_y;
+    let stocks_ticker_start_x;
+    let stocks_ticker_start_y;
 
     let stocks_return_start_x;
     let stocks_return_start_y;
@@ -307,23 +307,28 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
             ctx.fillRect(stocks_unit_start_x, stocks_unit_start_y, stocks_unit_width, stocks_unit_height);
             
             // Draw stocks label
-            ctx.font = "18px Arial";
+            
+            // Dynamic font size proportional to area
+            const stocks_ticker_font_size = Math.min(Math.max(stocks_unit_area/1000, 10), 50);  // Min: 10, Max: 50
+            ctx.font = `${stocks_ticker_font_size}px Arial`;
             ctx.fillStyle = "white";
 
             // Margin space after industry header
-            const stocks_label_margin_left = 10;
-            const stocks_label_margin_top = 20;
-            stocks_label_start_x = stocks_unit_start_x + stocks_label_margin_left
-            stocks_label_start_y = stocks_unit_start_y + stocks_label_margin_top
+            const stocks_ticker_margin_left = 10;
+            const stocks_ticker_margin_top = stocks_ticker_font_size;
+            stocks_ticker_start_x = stocks_unit_start_x + stocks_ticker_margin_left
+            stocks_ticker_start_y = stocks_unit_start_y + stocks_ticker_margin_top
 
-            ctx.fillText(stock, stocks_label_start_x, stocks_label_start_y);
+            ctx.fillText(stock, stocks_ticker_start_x, stocks_ticker_start_y);
 
             // Draw stocks return label
-            ctx.font = "14px Arial";
+
+            const stocks_returns_font_size = stocks_ticker_font_size - 10 // Slightly smaller than stock ticker label
+            ctx.font = `${stocks_returns_font_size}px Arial`;
             ctx.fillStyle = "white";
 
-            stocks_return_start_x = stocks_label_start_x
-            stocks_return_start_y = stocks_label_start_y + 20
+            stocks_return_start_x = stocks_ticker_start_x
+            stocks_return_start_y = stocks_ticker_start_y + stocks_ticker_font_size
             
             ctx.fillText(stock_return+'%', stocks_return_start_x, stocks_return_start_y);
 
@@ -357,8 +362,8 @@ function main() {
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
 
-    //drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width=canvas.width, map_height=canvas.height);
-    drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width=canvas.width, map_height=canvas.height);
+    //drawMapSquareGrid(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
+    drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
 };
 
 main();
