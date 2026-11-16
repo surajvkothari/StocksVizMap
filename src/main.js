@@ -7,36 +7,36 @@ function get_SPX_data() {
     
     // Market capitalization data by industry (in billions USD). Note: fictional values
     const fund_market_caps = {
-        "Technology": {
+        "TECHNOLOGY": {
             "APPL": 5200.00,
             "NVDA": 3900.00,
             "MSFT": 3850.00,
             // Add others later 
         },
-        "Financial": {
+        "FINANCIAL": {
             "JPM": 900.00,
             "BAC": 350.00,
             "WFC": 100.00,
             // Add others later 
         },
-        "Health Care": {
+        "HEALTH CARE": {
             "LLY": 1290.00,
             "JNJ": 580.00,
             "ABBV": 125.00,
             // Add others later
         },
-        "Industrials": {
+        "INDUSTRIALS": {
             "GE": 650.00,
             "CAT": 210.00,
             "BA": 130.00,
             // Add others later
         },
-        "Energy": {
+        "ENERGY": {
             "XOM": 730.00,
             "CVX": 400.00,
             // Add others later
         },
-        "Other": {
+        "OTHER": {
             "MCD": 400.00,
             "KO": 250.00,
             // Add others later
@@ -47,7 +47,7 @@ function get_SPX_data() {
     const stocks_returns = {
         "APPL": 0.73,
         "NVDA": -6.90,
-        "MSFT": 0.72,
+        "MSFT": 0,
         "JPM": 1.0,
         "BAC": -1.0,
         "WFC": 2.0,
@@ -56,7 +56,7 @@ function get_SPX_data() {
         "ABBV": 1.5,
         "GE": -3.5,
         "CAT": 0.8,
-        "BA": 0.3,
+        "BA": 0.0,
         "XOM": 0.6,
         "CVX": 4.5,
         "MCD": 1.20,
@@ -144,6 +144,7 @@ function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_h
 
     // Grid units will be layed out horizontally
     let industry_start_x = 0;
+    let stocks_start_x = 0;
 
     for (const industry in allocation_data["industry_allocations"]) {
         // Industry grid unit
@@ -165,7 +166,7 @@ function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_h
         ctx.fillText(industry, industry_start_x, 20);  
 
         // Stocks grid unit
-        let stocks_start_x = industry_start_x;
+        stocks_start_x = industry_start_x;
         for (const stock in allocation_data["stocks_allocations"][industry]) {
             const stocks_market_cap_allocation = allocation_data["stocks_allocations"][industry][stock];
             
@@ -211,33 +212,123 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
     */
     const total_map_area = map_width * map_height;
 
-    /* Render industries */
-    let industry_unit_start_x = 0;
-    let industry_unit_start_y = 0;
+    
+    let industry_unit_start_x;
+    let industry_unit_start_y;
     let industry_unit_end_x;
     let industry_unit_end_y;
+
+    let industry_label_start_x;
+    let industry_label_start_y;
+
+    let stocks_unit_start_x;
+    let stocks_unit_start_y;
+    let stocks_unit_end_x;
+    let stocks_unit_end_y;
+
+    let stocks_label_start_x;
+    let stocks_label_start_y;
+
+    let stocks_return_start_x;
+    let stocks_return_start_y;
+
+    /* Render industries */
+    
+    industry_unit_start_x = industry_unit_start_y = 0;  // Intialise starting coords
 
     // For each industry unit (in descending order by market cap)
     for (const industry in allocation_data["industry_allocations"]) {
         const industry_market_cap_allocation = allocation_data["industry_allocations"][industry];
         
-        // Area of individual unit
+        // Area of individual industry unit is proportional to total map area
         const industry_unit_area = industry_market_cap_allocation * total_map_area;
 
-        // First compute the width on the horizontal axis of the map
+        // Compute the width by slicing across the horizontal axis of the map
         const industry_unit_width = industry_market_cap_allocation * map_width;
+        // Compute the height as remainder given the previous width
         const industry_unit_height = industry_unit_area / industry_unit_width;
 
         industry_unit_end_x =  industry_unit_width;
         industry_unit_end_y =  industry_unit_height;
 
-        ctx.fillStyle = "black";
+        // Draw industry unit
+        ctx.fillStyle = "#262931";  // Dark Grey
         ctx.fillRect(industry_unit_start_x, industry_unit_start_y, industry_unit_end_x, industry_unit_end_y);
 
-        // Industry label
-        ctx.font = "16px Arial";
+        // Draw industry label
+        ctx.font = "bold 14px Arial";
         ctx.fillStyle = "white";
-        ctx.fillText(industry, industry_unit_start_x+10, industry_unit_start_y+20); 
+
+        // Margin space for header
+        const industry_label_margin_left = 10;
+        const industry_label_margin_top = 20;
+
+        industry_label_start_x = industry_unit_start_x + industry_label_margin_left    
+        industry_label_start_y = industry_unit_start_y + industry_label_margin_top  
+
+        ctx.fillText(industry, industry_label_start_x, 
+                     industry_label_start_y); 
+
+        /* Render stocks */
+
+        // Initialise starting coords
+        stocks_unit_start_x = industry_unit_start_x;
+        stocks_unit_start_y = industry_unit_start_y;
+        
+        // For each stocks unit (in descending order by market cap)
+        for (const stock in allocation_data["stocks_allocations"][industry]) {
+            const stocks_market_cap_allocation = allocation_data["stocks_allocations"][industry][stock];
+            
+            // Area of individual stocks unit is proportional to its industry
+            const stocks_unit_area = stocks_market_cap_allocation * industry_unit_area;
+
+            // Compute the width by slicing across the horizontal axis of the industry
+            const stocks_unit_width = stocks_market_cap_allocation * industry_unit_width;
+            // Compute the height as remainder given the previous width
+            const stocks_unit_height = stocks_unit_area / stocks_unit_width;
+
+            stocks_unit_end_x = stocks_unit_width;
+            stocks_unit_end_y = stocks_unit_height;
+
+            const stock_return = stock_returns[stock];
+            if (stock_return > 0) {
+                ctx.fillStyle = "green";
+            } else if (stock_return < 0) {
+                ctx.fillStyle = "red";
+            } else {
+                ctx.fillStyle = "grey";
+            }
+
+            // Margin space after industry header
+            const stocks_unit_margin_top = industry_label_margin_top + 10;
+            stocks_unit_start_y += stocks_unit_margin_top;
+
+            // Draw stocks unit
+            ctx.fillRect(stocks_unit_start_x, stocks_unit_start_y, stocks_unit_width, stocks_unit_height);
+            
+            // Draw stocks label
+            ctx.font = "18px Arial";
+            ctx.fillStyle = "white";
+
+            // Margin space after industry header
+            const stocks_label_margin_left = 10;
+            const stocks_label_margin_top = 20;
+            stocks_label_start_x = stocks_unit_start_x + stocks_label_margin_left
+            stocks_label_start_y = stocks_unit_start_y + stocks_label_margin_top
+
+            ctx.fillText(stock, stocks_label_start_x, stocks_label_start_y);
+
+            // Draw stocks return label
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "white";
+
+            stocks_return_start_x = stocks_label_start_x
+            stocks_return_start_y = stocks_label_start_y + 20
+            
+            ctx.fillText(stock_return+'%', stocks_return_start_x, stocks_return_start_y);
+
+            stocks_unit_start_x += stocks_unit_width;
+        }
 
         // Move starting x_coord to begin drawing the next unit
         industry_unit_start_x += industry_unit_width;        
