@@ -6,7 +6,7 @@ function get_SPX_data() {
     /* Hard-coded data for now. API call to be implemented later. */
     
     // Market capitalization data by industry (in billions USD). Note: fictional values
-    fund_market_caps = {
+    const fund_market_caps = {
         "Technology": {
             "APPL": 5200.00,
             "NVDA": 3900.00,
@@ -44,7 +44,7 @@ function get_SPX_data() {
     }
 
     // Daily returns (%). Note: fictional values
-    stocks_returns = {
+    const stocks_returns = {
         "APPL": 0.73,
         "NVDA": -6.90,
         "MSFT": 0.72,
@@ -63,7 +63,7 @@ function get_SPX_data() {
         "KO": 3.00,
     }
 
-    data = {
+    const data = {
         "market_caps": fund_market_caps,
         "stocks_returns": stocks_returns
     }
@@ -86,17 +86,15 @@ function getFundData(fundID) {
 }
 
 function getMarketCapAllocation(fund_market_caps) {
-    /* Compute the percentage allocation of the industries and stocks within their respective industries */
-    total_fund_market_cap = 0;
+    /* Compute the allocation of the industries and stocks within their respective industries */
+    let total_fund_market_cap = 0;
     for (const industry in fund_market_caps) {
         for (const stock in fund_market_caps[industry]) {
             total_fund_market_cap += fund_market_caps[industry][stock];
         }
     }
 
-    console.log("Total Fund Market Cap:", total_fund_market_cap);
-
-    // Get allocation (%) of industries in the fund
+    // Get allocation of industries in the fund
     const industry_allocations = {};
     for (const industry in fund_market_caps) {
         let industry_market_cap = 0;
@@ -105,9 +103,9 @@ function getMarketCapAllocation(fund_market_caps) {
             industry_market_cap += fund_market_caps[industry][stock];
         }
         industry_allocations[industry] = industry_market_cap / total_fund_market_cap;
-    } 
+    }
 
-    // Get allocation (%) of stocks in their respective industries
+    // Get allocation of stocks in their respective industries
     const stocks_allocations = {};
     for (const industry in fund_market_caps) {
         let industry_total_market_cap = industry_allocations[industry] * total_fund_market_cap;
@@ -131,7 +129,7 @@ function getMarketCapAllocation(fund_market_caps) {
         );
     }
 
-    allocation_data = {
+    const allocation_data = {
         "industry_allocations": sorted_industry_allocations,
         "stocks_allocations": sorted_stocks_allocations
     }
@@ -142,25 +140,24 @@ function getMarketCapAllocation(fund_market_caps) {
 
 function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_height) {
     /* Map: Grid units are squares and their area is the market cap allocation */
-    total_map_area = map_width * map_height;
+    const total_map_area = map_width * map_height;
 
     // Grid units will be layed out horizontally
-    industry_start_x = 0;
+    let industry_start_x = 0;
 
     for (const industry in allocation_data["industry_allocations"]) {
         // Industry grid unit
 
         // Width and height are square root of the allocation percentage (area) multiplied by a scaling factor
-        market_cap_allocation = allocation_data["industry_allocations"][industry];
-        industry_unit_area = market_cap_allocation * total_map_area;
+        const industry_market_cap_allocation = allocation_data["industry_allocations"][industry];
+        const industry_unit_area = industry_market_cap_allocation * total_map_area;
 
         // If all units are stacked horizontally, the total width will exceed the canvas width. Dividing by 2 for visibility.
-        industry_unit_width = industry_unit_height = Math.sqrt(industry_unit_area) / 2;
-        total_industry_area = industry_unit_width * industry_unit_height;
+        const industry_unit_width = industry_unit_height = Math.sqrt(industry_unit_area) / 2;
+        const total_industry_area = industry_unit_width * industry_unit_height;
         
         ctx.fillStyle = "black";
         ctx.fillRect(industry_start_x, 0, industry_unit_width, industry_unit_height);
-
 
         // Industry label
         ctx.font = "18px Arial";
@@ -168,15 +165,15 @@ function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_h
         ctx.fillText(industry, industry_start_x, 20);  
 
         // Stocks grid unit
-        stocks_start_x = industry_start_x;
+        let stocks_start_x = industry_start_x;
         for (const stock in allocation_data["stocks_allocations"][industry]) {
-            market_cap_allocation = allocation_data["stocks_allocations"][industry][stock];
+            const stocks_market_cap_allocation = allocation_data["stocks_allocations"][industry][stock];
             
-            stocks_unit_area = market_cap_allocation * total_industry_area;
+            const stocks_unit_area = stocks_market_cap_allocation * total_industry_area;
             // If all units are stacked horizontally, the total width will exceed the canvas width. Dividing by 2 for visibility.
-            stocks_unit_width = stocks_unit_height = Math.sqrt(stocks_unit_area) / 2;
+            const stocks_unit_width = stocks_unit_height = Math.sqrt(stocks_unit_area) / 2;
 
-            stock_return = stock_returns[stock];
+            const stock_return = stock_returns[stock];
             if (stock_return > 0) {
                 ctx.fillStyle = "green";
             } else if (stock_return < 0) {
@@ -185,7 +182,6 @@ function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_h
 
             ctx.fillRect(stocks_start_x, 50, stocks_unit_width, stocks_unit_height);
             
-            console.log(industry, stock, stock_return);
             // Stock label
             ctx.font = "12px Arial";
             ctx.fillStyle = "white";
@@ -204,6 +200,61 @@ function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_h
     }
 }
 
+function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map_height) {
+    /* 
+    Slice and Dice Algorithm
+    
+    Pack rectangles of a given area into a container of size (w, h)
+    such that all of the rectangles fill the whole container with no gaps
+
+    The rectangles will be arranged across a single axis: horizontally. This may cause some to be visually hard to see 
+    */
+    const total_map_area = map_width * map_height;
+
+    /* Render industries */
+    let industry_unit_start_x = 0;
+    let industry_unit_start_y = 0;
+    let industry_unit_end_x;
+    let industry_unit_end_y;
+
+    // For each industry unit (in descending order by market cap)
+    for (const industry in allocation_data["industry_allocations"]) {
+        const industry_market_cap_allocation = allocation_data["industry_allocations"][industry];
+        
+        // Area of individual unit
+        const industry_unit_area = industry_market_cap_allocation * total_map_area;
+
+        // First compute the width on the horizontal axis of the map
+        const industry_unit_width = industry_market_cap_allocation * map_width;
+        const industry_unit_height = industry_unit_area / industry_unit_width;
+
+        industry_unit_end_x =  industry_unit_width;
+        industry_unit_end_y =  industry_unit_height;
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(industry_unit_start_x, industry_unit_start_y, industry_unit_end_x, industry_unit_end_y);
+
+        // Industry label
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "white";
+        ctx.fillText(industry, industry_unit_start_x+10, industry_unit_start_y+20); 
+
+        // Move starting x_coord to begin drawing the next unit
+        industry_unit_start_x += industry_unit_width;        
+    }
+}
+
+function drawMap() {
+    /* 
+    Squarified Tree Map Algorithm
+    
+    Pack rectangles of a given area into a container of size (w, h)
+    such that all of the rectangles fill the whole container with no gaps
+
+    The aspect ratio of the rectangles should be optimised to a square to help visually for human sight
+    */
+}
+
 function main() {
     const fund_data = getFundData("SPX");
     const fund_market_caps = fund_data["market_caps"];
@@ -215,7 +266,8 @@ function main() {
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
 
-    drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width=canvas.width, map_height=canvas.height);
+    //drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width=canvas.width, map_height=canvas.height);
+    drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width=canvas.width, map_height=canvas.height);
 };
 
 main();
