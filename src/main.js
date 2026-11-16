@@ -8,7 +8,7 @@ function get_SPX_data() {
     // Market capitalization data by industry (in billions USD). Note: fictional values
     const fund_market_caps = {
         "TECHNOLOGY": {
-            "APPL": 5200.00,
+            "AAPL": 5200.00,
             "NVDA": 3900.00,
             "MSFT": 3850.00,
             // Add others later 
