@@ -314,7 +314,10 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
             // Draw stocks label
             
             // Dynamic font size proportional to area
-            const stocks_ticker_font_size = Math.min(Math.max(stocks_unit_area/1000, 10), 50);  // Min: 10, Max: 50
+            const font_size_sf = 1000
+            let stocks_ticker_font_size = Math.min(stocks_unit_area/font_size_sf, 50);  // Max font size: 50
+            if (stocks_ticker_font_size < 10) {stocks_ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
+
             ctx.font = `${stocks_ticker_font_size}px Arial`;
             ctx.fillStyle = "white";
 
@@ -328,7 +331,8 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
 
             // Draw stocks return label
 
-            const stocks_returns_font_size = stocks_ticker_font_size - 10 // Slightly smaller than stock ticker label
+            let stocks_returns_font_size = stocks_ticker_font_size - 10 // Slightly smaller than stock ticker label
+            if (stocks_returns_font_size < 10) {stocks_returns_font_size = 0;}  // Min font size: 10, otherwise hide label
             ctx.font = `${stocks_returns_font_size}px Arial`;
             ctx.fillStyle = "white";
 
