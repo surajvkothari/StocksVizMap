@@ -301,7 +301,7 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
 
             // Margin space after industry header
             const stocks_unit_margin_top = industry_label_margin_top + 10;
-            stocks_unit_start_y += stocks_unit_margin_top;
+            stocks_unit_start_y = industry_unit_start_y + stocks_unit_margin_top;
 
             // Draw stocks unit
             ctx.fillRect(stocks_unit_start_x, stocks_unit_start_y, stocks_unit_width, stocks_unit_height);
