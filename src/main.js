@@ -45,7 +45,7 @@ function get_SPX_data() {
 
     // Daily returns (%). Note: fictional values
     const stocks_returns = {
-        "APPL": 0.73,
+        "AAPL": 0.73,
         "NVDA": -6.90,
         "MSFT": 0,
         "JPM": 1.0,
