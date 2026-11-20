@@ -138,69 +138,6 @@ function getMarketCapAllocation(fund_market_caps) {
    
 }
 
-function drawMapSquareGrid(ctx, allocation_data, stock_returns, map_width, map_height) {
-    /* Map: Grid units are squares and their area is the market cap allocation */
-    const total_map_area = map_width * map_height;
-
-    // Grid units will be layed out horizontally
-    let industry_start_x = 0;
-    let stocks_start_x = 0;
-
-    for (const industry in allocation_data["industry_allocations"]) {
-        // Industry grid unit
-
-        // Width and height are square root of the allocation percentage (area) multiplied by a scaling factor
-        const industry_market_cap_allocation = allocation_data["industry_allocations"][industry];
-        const industry_unit_area = industry_market_cap_allocation * total_map_area;
-
-        // If all units are stacked horizontally, the total width will exceed the canvas width. Dividing by 2 for visibility.
-        const industry_unit_width = industry_unit_height = Math.sqrt(industry_unit_area) / 2;
-        const total_industry_area = industry_unit_width * industry_unit_height;
-        
-        ctx.fillStyle = "black";
-        ctx.fillRect(industry_start_x, 0, industry_unit_width, industry_unit_height);
-
-        // Industry label
-        ctx.font = "18px Arial";
-        ctx.fillStyle = "white";
-        ctx.fillText(industry, industry_start_x, 20);  
-
-        // Stocks grid unit
-        stocks_start_x = industry_start_x;
-        for (const stock in allocation_data["stocks_allocations"][industry]) {
-            const stocks_market_cap_allocation = allocation_data["stocks_allocations"][industry][stock];
-            
-            const stocks_unit_area = stocks_market_cap_allocation * total_industry_area;
-            // If all units are stacked horizontally, the total width will exceed the canvas width. Dividing by 2 for visibility.
-            const stocks_unit_width = stocks_unit_height = Math.sqrt(stocks_unit_area) / 2;
-
-            const stock_return = stock_returns[stock];
-            if (stock_return > 0) {
-                ctx.fillStyle = "green";
-            } else if (stock_return < 0) {
-                ctx.fillStyle = "red";
-            }
-
-            ctx.fillRect(stocks_start_x, 50, stocks_unit_width, stocks_unit_height);
-            
-            // Stock label
-            ctx.font = "12px Arial";
-            ctx.fillStyle = "white";
-            ctx.fillText(stock, stocks_start_x, 70);
-
-            // Stock return label
-            ctx.font = "12px Arial";
-            ctx.fillStyle = "white";
-            
-            ctx.fillText(stock_return+'%', stocks_start_x, 100);
-
-            stocks_start_x += stocks_unit_width;
-        }
-
-        industry_start_x += industry_unit_width;
-    }
-}
-
 function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map_height) {
     /* 
     Slice and Dice Algorithm
@@ -208,7 +145,7 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
     Pack rectangles of a given area into a container of size (w, h)
     such that all of the rectangles fill the whole container with no gaps
 
-    The rectangles will be arranged across a single axis: horizontally. This may cause some to be visually hard to see 
+    The rectangles will be arranged along a single axis: horizontally. This may cause some to be visually hard to see.
     */
     const total_map_area = map_width * map_height;
 
@@ -267,9 +204,7 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
         industry_label_start_x = industry_unit_start_x + industry_label_margin_left    
         industry_label_start_y = industry_unit_start_y + industry_label_margin_top  
 
-        ctx.fillText(industry, industry_label_start_x, 
-                     industry_label_start_y); 
-
+        ctx.fillText(industry, industry_label_start_x, industry_label_start_y);
 
         const industry_header_height = industry_unit_start_y + industry_label_margin_top + 10;
         
@@ -309,7 +244,7 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
                 ctx.fillStyle = "grey";
             }
 
-            ctx.fillRect(stocks_unit_start_x, stocks_unit_start_y, stocks_unit_width, stocks_unit_height);
+            ctx.fillRect(stocks_unit_start_x, stocks_unit_start_y, stocks_unit_end_x, stocks_unit_end_y);
             
             // Draw stocks label
             
@@ -349,18 +284,148 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
     }
 }
 
-function drawMap() {
-    /* 
-    Squarified Tree Map Algorithm
-    
-    Pack rectangles of a given area into a container of size (w, h)
-    such that all of the rectangles fill the whole container with no gaps
 
-    The aspect ratio of the rectangles should be optimised to a square to help visually for human sight
-    */
+function getUnitAreas(allocation_data, map_width, map_height) {
+    
+    
+    const total_map_area = map_width * map_height;
+
+    let industry_unit_areas = {};
+
+    // For each industry unit (in descending order by market cap)\\\
+    for (const industry in allocation_data["industry_allocations"]) {
+        const industry_market_cap_allocation = allocation_data["industry_allocations"][industry];
+        
+        // Area of individual industry unit is proportional to total map area
+        const industry_unit_area = industry_market_cap_allocation * total_map_area;
+        industry_unit_areas[industry] = industry_unit_area;  // Store industry unit's area
+    }
+}
+
+
+function squarify(areas, container_width, container_height) {
+    /* Recursively minimise the aspect ratio of the unit's rectangle being drawn */
+    
+}
+
+function getStockUnitColor(stock_return) {
+    /* Color map based on stock returns */
+    if (stock_return > 0) {
+        return "green";
+    } else if (stock_return < 0) {
+        return "red";
+    } else {
+        return "grey";
+    }
+}
+
+function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, color) {
+    /* Render industry unit rectangle to canvas */
+    
+    // Draw unit
+    ctx.fillStyle = color;  // Dark Grey
+    ctx.fillRect(start_x, start_y, end_x, end_y);
+
+    // Draw label in header
+    const label_font_size = 14;
+    ctx.font = `bold ${label_font_size}px Arial`;
+    ctx.fillStyle = "white";
+
+    // Margin space for header
+    const label_margin_left = 10;
+    const label_margin_top = 10 + industry_label_font_size;
+
+    const label_start_x = start_x + label_margin_left    
+    const label_start_y = start_y + label_margin_top  
+
+    ctx.fillText(industry_label, label_start_x, label_start_y);
+}
+
+function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, color, stock_return) {
+    /* Render stock unit rectangle to canvas */
+
+    // Draw unit
+    ctx.fillStyle = color;  // Set unit color            
+    ctx.fillRect(start_x, start_y, end_x, end_y);
+
+    const unit_area = (end_x - start_x) * (end_y - start_y);
+
+    // Draw ticker label
+   
+    // Dynamic font size proportional to area
+    const font_size_sf = 1000
+    let ticker_font_size = Math.min(unit_area/font_size_sf, 50);  // Max font size: 50
+    if (ticker_font_size < 10) {ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
+
+    ctx.font = `${ticker_font_size}px Arial`;
+    ctx.fillStyle = "white";
+
+    // Margin for ticker and return labels
+    const ticker_margin_left = 10;
+    const ticker_margin_top = ticker_font_size;
+    
+    const ticker_start_x = start_x + ticker_margin_left
+    const ticker_start_y = start_y + ticker_margin_top
+
+    ctx.fillText(ticker_label, ticker_start_x, ticker_start_y);
+
+    // Draw stock return
+    let returns_font_size = ticker_font_size - 10 // Slightly smaller than stock ticker label
+    if (returns_font_size < 10) {returns_font_size = 0;}  // Min font size: 10, otherwise hide label
+    
+    ctx.font = `${returns_font_size}px Arial`;
+    ctx.fillStyle = "white";
+
+    const return_start_x = ticker_start_x
+    const return_start_y = ticker_start_y + ticker_font_size
+    
+    ctx.fillText(stock_return+'%', return_start_x, return_start_y);
+}
+
+function drawMap(ctx, unit_rects, stock_returns) {
+    /* Draw map with unit rectangles of industries and stocks to screen */    
+
+    for (const industry in unit_rects["industry_units"]) {
+        /* Draw industry units */
+
+        const industry_unit_start_x = unit_rects["industry_units"][industry]['start_x'];
+        const industry_unit_start_y = unit_rects["industry_units"][industry]['start_y'];
+        const industry_unit_end_x = unit_rects["industry_units"][industry]['end_x'];
+        const industry_unit_end_y = unit_rects["industry_units"][industry]['end_y'];
+
+        drawIndustryUnit(ctx, industry,
+            industry_unit_start_x, industry_unit_start_y, 
+            industry_unit_end_x, industry_unit_end_y, 
+            "#262931",
+        )
+
+        for (const stock in allocation_data["stocks_allocations"][industry]) {
+            /* Draw stocks units */
+            const stocks_unit_start_x = unit_rects["stocks_units"][industry][stock]['start_x'];
+            const stocks_unit_start_y = unit_rects["stocks_units"][industry][stock]['start_y'];
+            const stocks_unit_end_x = unit_rects["stocks_units"][industry][stock]['end_x'];
+            const stocks_unit_end_y = unit_rects["stocks_units"][industry][stock]['end_y'];
+
+            drawStockUnit(ctx, stock,
+            stock_unit_start_x, stock_unit_start_y, 
+            stock_unit_end_x, stock_unit_end_y, 
+            getStockUnitColor(stock_returns[stock]), 
+            stock_return
+            )
+        }
+    }
 }
 
 function main() {
+    /* 
+    Squarified Tree Map Algorithm
+    
+    Pack rectangles of a given area into a container of size (W, H),
+    such that all of the rectangles fill the whole container with no gaps
+
+    The aspect ratio of these rectangles are minimised to be closer to a square, which is visually better for human sight
+    */
+
     const fund_data = getFundData("SPX");
     const fund_market_caps = fund_data["market_caps"];
     const stock_returns = fund_data["stocks_returns"];
@@ -372,7 +437,50 @@ function main() {
     const ctx = canvas.getContext("2d");
 
     //drawMapSquareGrid(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
-    drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
+    //drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
+
+    areas = getUnitAreas(allocation_data, canvas.width, canvas.height);
+    /*
+    Example structure of unit_rects:
+    unit_rects: {
+        "industry_units": {
+            "TECHNOLOGY": {
+                'start_x': 0,
+                'start_y': 0,
+                'end_x': 100,
+                'end_y': 100,
+            },
+            "ENERGY": {
+                'start_x': 100,
+                'start_y': 0,
+                'end_x': 200,
+                'end_y': 100,
+            },
+            . . .
+        },
+        "stocks_units": {
+            "TECHNOLOGY": {
+                'AAPL': {
+                    'start_x': 0,
+                    'start_y': 0,
+                    'end_x': 100,
+                    'end_y': 100,
+                },
+                'NVDA': {
+                    'start_x': 0,
+                    'start_y': 0,
+                    'end_x': 100,
+                    'end_y': 100,
+                },
+            },
+            . . .
+        },
+
+    }
+    */
+    unit_rects = squarify(areas, canvas.width, canvas.height);
+
+    //drawMap(ctx, unit_rects);
 };
 
 main();
