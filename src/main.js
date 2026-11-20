@@ -71,9 +71,12 @@ function get_SPX_data() {
     return data;
 }
 
+
 function get_NDX_data() {/* Add later */}
 
+
 function get_UKX_data() {/* Add later */}
+
 
 function getFundData(fundID) {
     if (fundID === "SPX") {
@@ -84,6 +87,7 @@ function getFundData(fundID) {
         return get_UKX_data();
     }
 }
+
 
 function getMarketCapAllocation(fund_market_caps) {
     /* Compute the allocation of the industries and stocks within their respective industries */
@@ -138,6 +142,89 @@ function getMarketCapAllocation(fund_market_caps) {
    
 }
 
+
+function getStockUnitColor(stock_return) {
+    /* Color map based on stock returns */
+    if (stock_return > 0) {
+        return "green";
+    } else if (stock_return < 0) {
+        return "red";
+    } else {
+        return "grey";
+    }
+}
+
+
+function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, color) {
+    /* Render industry unit rectangle to canvas */
+    
+    // Draw unit
+    ctx.fillStyle = color;  // Dark Grey
+    ctx.fillRect(start_x, start_y, end_x, end_y);
+
+    // Draw label in header
+    const label_font_size = 14;
+    ctx.font = `bold ${label_font_size}px Arial`;
+    ctx.fillStyle = "white";
+
+    // Margin space for header
+    const label_margin_left = 10;
+    const label_margin_top = 10 + label_font_size;
+
+    const label_start_x = start_x + label_margin_left    
+    const label_start_y = start_y + label_margin_top  
+
+    ctx.fillText(industry_label, label_start_x, label_start_y);
+
+    let header_height = label_margin_top + 10;  // Create margin for header and get its total height
+
+    return header_height;
+}
+
+
+function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, color, stock_return) {
+    /* Render stock unit rectangle to canvas */
+    
+    // Draw unit
+    ctx.fillStyle = color;  // Set unit color            
+    ctx.fillRect(start_x, start_y, end_x, end_y);
+
+    const unit_area = (end_x - start_x) * (end_y - start_y);
+    
+
+    // Draw ticker label
+   
+    // Dynamic font size proportional to area
+    const font_size_sf = 1000
+    let ticker_font_size = Math.min(unit_area/font_size_sf, 50);  // Max font size: 50
+    if (ticker_font_size < 10) {ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
+
+    ctx.font = `${ticker_font_size}px Arial`;
+    ctx.fillStyle = "white";
+
+    // Margin for ticker and return labels
+    const ticker_margin_left = 10;
+    const ticker_margin_top = ticker_font_size;
+    
+    const ticker_start_x = start_x + ticker_margin_left
+    const ticker_start_y = start_y + ticker_margin_top
+
+    ctx.fillText(ticker_label, ticker_start_x, ticker_start_y);
+
+    // Draw stock return
+    let returns_font_size = ticker_font_size - 10 // Slightly smaller than stock ticker label
+    if (returns_font_size < 10) {returns_font_size = 0;}  // Min font size: 10, otherwise hide label
+    
+    ctx.font = `${returns_font_size}px Arial`;
+    ctx.fillStyle = "white";
+
+    const return_start_x = ticker_start_x
+    const return_start_y = ticker_start_y + ticker_font_size
+    
+    ctx.fillText(stock_return+'%', return_start_x, return_start_y);
+}
+
+
 function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map_height) {
     /* 
     Slice and Dice Algorithm
@@ -145,7 +232,7 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
     Pack rectangles of a given area into a container of size (w, h)
     such that all of the rectangles fill the whole container with no gaps
 
-    The rectangles will be arranged along a single axis: horizontally. This may cause some to be visually hard to see.
+    The rectangles will be arranged along a single axis: horizontally. This may cause smaller ones to be visually hard to see.
     */
     const total_map_area = map_width * map_height;
 
@@ -185,28 +272,15 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
         // Compute the height as remainder given the previous width
         const industry_unit_height = industry_unit_area / industry_unit_width;
 
-        industry_unit_end_x =  industry_unit_width;
-        industry_unit_end_y =  industry_unit_height;
+        industry_unit_end_x = industry_unit_width;
+        industry_unit_end_y = industry_unit_height;
 
         // Draw industry unit
-        ctx.fillStyle = "#262931";  // Dark Grey
-        ctx.fillRect(industry_unit_start_x, industry_unit_start_y, industry_unit_end_x, industry_unit_end_y);
-
-        // Draw industry label
-        const industry_label_font_size = 14;
-        ctx.font = `bold ${industry_label_font_size}px Arial`;
-        ctx.fillStyle = "white";
-
-        // Margin space for header
-        const industry_label_margin_left = 10;
-        const industry_label_margin_top = 10 + industry_label_font_size;
-
-        industry_label_start_x = industry_unit_start_x + industry_label_margin_left    
-        industry_label_start_y = industry_unit_start_y + industry_label_margin_top  
-
-        ctx.fillText(industry, industry_label_start_x, industry_label_start_y);
-
-        const industry_header_height = industry_unit_start_y + industry_label_margin_top + 10;
+        const industry_header_height = drawIndustryUnit(ctx, 
+            industry, industry_unit_start_x, industry_unit_start_y, 
+            industry_unit_end_x, industry_unit_end_y, 
+            "#262931"
+        );
         
         /* Render stocks */
 
@@ -230,51 +304,17 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
             // Compute the height as remainder given the previous width
             const stocks_unit_height = stocks_unit_area / stocks_unit_width;
 
-            stocks_unit_end_x = stocks_unit_width;
-            stocks_unit_end_y = stocks_unit_height;            
+            stocks_unit_end_x = stocks_unit_start_x + stocks_unit_width;
+            stocks_unit_end_y = stocks_unit_start_y + stocks_unit_height;       
             
-            // Draw stocks unit
-            // Simple colour map
             const stock_return = stock_returns[stock];
-            if (stock_return > 0) {
-                ctx.fillStyle = "green";
-            } else if (stock_return < 0) {
-                ctx.fillStyle = "red";
-            } else {
-                ctx.fillStyle = "grey";
-            }
-
-            ctx.fillRect(stocks_unit_start_x, stocks_unit_start_y, stocks_unit_end_x, stocks_unit_end_y);
             
-            // Draw stocks label
-            
-            // Dynamic font size proportional to area
-            const font_size_sf = 1000
-            let stocks_ticker_font_size = Math.min(stocks_unit_area/font_size_sf, 50);  // Max font size: 50
-            if (stocks_ticker_font_size < 10) {stocks_ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
-
-            ctx.font = `${stocks_ticker_font_size}px Arial`;
-            ctx.fillStyle = "white";
-
-            // Margin space after industry header
-            const stocks_ticker_margin_left = 10;
-            const stocks_ticker_margin_top = stocks_ticker_font_size;
-            stocks_ticker_start_x = stocks_unit_start_x + stocks_ticker_margin_left
-            stocks_ticker_start_y = stocks_unit_start_y + stocks_ticker_margin_top
-
-            ctx.fillText(stock, stocks_ticker_start_x, stocks_ticker_start_y);
-
-            // Draw stocks return label
-
-            let stocks_returns_font_size = stocks_ticker_font_size - 10 // Slightly smaller than stock ticker label
-            if (stocks_returns_font_size < 10) {stocks_returns_font_size = 0;}  // Min font size: 10, otherwise hide label
-            ctx.font = `${stocks_returns_font_size}px Arial`;
-            ctx.fillStyle = "white";
-
-            stocks_return_start_x = stocks_ticker_start_x
-            stocks_return_start_y = stocks_ticker_start_y + stocks_ticker_font_size
-            
-            ctx.fillText(stock_return+'%', stocks_return_start_x, stocks_return_start_y);
+            drawStockUnit(ctx, stock, 
+                stocks_unit_start_x, stocks_unit_start_y, 
+                stocks_unit_end_x, stocks_unit_end_y, 
+                getStockUnitColor(stock_return),
+                stock_return
+            );
 
             stocks_unit_start_x += stocks_unit_width;
         }
@@ -308,115 +348,8 @@ function squarify(areas, container_width, container_height) {
     
 }
 
-function getStockUnitColor(stock_return) {
-    /* Color map based on stock returns */
-    if (stock_return > 0) {
-        return "green";
-    } else if (stock_return < 0) {
-        return "red";
-    } else {
-        return "grey";
-    }
-}
 
-function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, color) {
-    /* Render industry unit rectangle to canvas */
-    
-    // Draw unit
-    ctx.fillStyle = color;  // Dark Grey
-    ctx.fillRect(start_x, start_y, end_x, end_y);
-
-    // Draw label in header
-    const label_font_size = 14;
-    ctx.font = `bold ${label_font_size}px Arial`;
-    ctx.fillStyle = "white";
-
-    // Margin space for header
-    const label_margin_left = 10;
-    const label_margin_top = 10 + industry_label_font_size;
-
-    const label_start_x = start_x + label_margin_left    
-    const label_start_y = start_y + label_margin_top  
-
-    ctx.fillText(industry_label, label_start_x, label_start_y);
-}
-
-function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, color, stock_return) {
-    /* Render stock unit rectangle to canvas */
-
-    // Draw unit
-    ctx.fillStyle = color;  // Set unit color            
-    ctx.fillRect(start_x, start_y, end_x, end_y);
-
-    const unit_area = (end_x - start_x) * (end_y - start_y);
-
-    // Draw ticker label
-   
-    // Dynamic font size proportional to area
-    const font_size_sf = 1000
-    let ticker_font_size = Math.min(unit_area/font_size_sf, 50);  // Max font size: 50
-    if (ticker_font_size < 10) {ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
-
-    ctx.font = `${ticker_font_size}px Arial`;
-    ctx.fillStyle = "white";
-
-    // Margin for ticker and return labels
-    const ticker_margin_left = 10;
-    const ticker_margin_top = ticker_font_size;
-    
-    const ticker_start_x = start_x + ticker_margin_left
-    const ticker_start_y = start_y + ticker_margin_top
-
-    ctx.fillText(ticker_label, ticker_start_x, ticker_start_y);
-
-    // Draw stock return
-    let returns_font_size = ticker_font_size - 10 // Slightly smaller than stock ticker label
-    if (returns_font_size < 10) {returns_font_size = 0;}  // Min font size: 10, otherwise hide label
-    
-    ctx.font = `${returns_font_size}px Arial`;
-    ctx.fillStyle = "white";
-
-    const return_start_x = ticker_start_x
-    const return_start_y = ticker_start_y + ticker_font_size
-    
-    ctx.fillText(stock_return+'%', return_start_x, return_start_y);
-}
-
-function drawMap(ctx, unit_rects, stock_returns) {
-    /* Draw map with unit rectangles of industries and stocks to screen */    
-
-    for (const industry in unit_rects["industry_units"]) {
-        /* Draw industry units */
-
-        const industry_unit_start_x = unit_rects["industry_units"][industry]['start_x'];
-        const industry_unit_start_y = unit_rects["industry_units"][industry]['start_y'];
-        const industry_unit_end_x = unit_rects["industry_units"][industry]['end_x'];
-        const industry_unit_end_y = unit_rects["industry_units"][industry]['end_y'];
-
-        drawIndustryUnit(ctx, industry,
-            industry_unit_start_x, industry_unit_start_y, 
-            industry_unit_end_x, industry_unit_end_y, 
-            "#262931",
-        )
-
-        for (const stock in allocation_data["stocks_allocations"][industry]) {
-            /* Draw stocks units */
-            const stocks_unit_start_x = unit_rects["stocks_units"][industry][stock]['start_x'];
-            const stocks_unit_start_y = unit_rects["stocks_units"][industry][stock]['start_y'];
-            const stocks_unit_end_x = unit_rects["stocks_units"][industry][stock]['end_x'];
-            const stocks_unit_end_y = unit_rects["stocks_units"][industry][stock]['end_y'];
-
-            drawStockUnit(ctx, stock,
-            stock_unit_start_x, stock_unit_start_y, 
-            stock_unit_end_x, stock_unit_end_y, 
-            getStockUnitColor(stock_returns[stock]), 
-            stock_return
-            )
-        }
-    }
-}
-
-function main() {
+function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width, map_height) {
     /* 
     Squarified Tree Map Algorithm
     
@@ -426,20 +359,9 @@ function main() {
     The aspect ratio of these rectangles are minimised to be closer to a square, which is visually better for human sight
     */
 
-    const fund_data = getFundData("SPX");
-    const fund_market_caps = fund_data["market_caps"];
-    const stock_returns = fund_data["stocks_returns"];
-    const allocation_data = getMarketCapAllocation(fund_market_caps);
-
-    console.log("Allocation Data:", allocation_data);
-
-    const canvas = document.getElementById("map");
-    const ctx = canvas.getContext("2d");
-
-    //drawMapSquareGrid(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
-    //drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
-
-    areas = getUnitAreas(allocation_data, canvas.width, canvas.height);
+    areas = getUnitAreas(allocation_data, map_width, map_height);
+    
+    unit_rects = squarify(areas, canvas.width, canvas.height);
     /*
     Example structure of unit_rects:
     unit_rects: {
@@ -478,9 +400,29 @@ function main() {
 
     }
     */
-    unit_rects = squarify(areas, canvas.width, canvas.height);
 
-    //drawMap(ctx, unit_rects);
+    // For each industry unit
+    for (const industry in unit_rects["industry_units"]) {
+        // To Do
+    }
+
+}
+
+function main() {
+    
+
+    const fund_data = getFundData("SPX");
+    const fund_market_caps = fund_data["market_caps"];
+    const stock_returns = fund_data["stocks_returns"];
+    const allocation_data = getMarketCapAllocation(fund_market_caps);
+
+    console.log("Allocation Data:", allocation_data);
+
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+
+    drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
+    //drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, canvas.width, canvas.height)
 };
 
 main();
