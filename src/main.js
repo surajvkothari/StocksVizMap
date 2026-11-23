@@ -504,8 +504,21 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
     /* Stocks unit rects */
     // For each industry, get the stocks unit rects
     for (const industry in allocation_data["stocks_allocations"]) {
+        // Draw industry unit
+        // To Do: Enter actual arguments
+        drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, color);
+
         stocks_allocation_list = Object.entries(allocation_data["stocks_allocations"][industry]).map(([key, value]) => ({ [key]: value }));
         stocks_unit_rects = squarify(stocks_allocation_list, 0, 0, map_width, map_height);
+
+        for (const stock of stock_rects[industry]) {
+            const ticker_label = Object.keys(stock)[0];
+            const stock_return = stock_returns[ticker_label];
+
+            // Draw stock unit
+            // To Do: Enter actual arguments
+            drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, color, stock_return);
+        }
     }
     
     /*
