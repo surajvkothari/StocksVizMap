@@ -349,7 +349,7 @@ function get_worst_aspect_ratio(row, shortest_length) {
 }
 
 
-function squarify(children, x, y, container_width, container_height) {
+function squarify(children, container_x, container_y, container_width, container_height) {
     /* Recursively minimise the aspect ratio of the unit's rectangle being drawn */
     const container_area = container_width * container_height;
     const sum_weights = Object.values(children).reduce((a, b) => a + b, 0);
@@ -388,9 +388,9 @@ function squarify(children, x, y, container_width, container_height) {
         if (row.length == 0) {row.push({[unit_label]: unit_area})}  // Initialize a new row with the first child
         
         const row_area = row.flatMap(obj => Object.values(obj)).reduce((total, v) => total + v, 0);  // Sum of unit areas in the row
-        const row_width = row_area / shortest_length;  // Thickness of the row
+        const row_thickness = row_area / shortest_length;  // Thickness of the row
 
-        const unit_length = unit_area / row_width;  // Length of the unit along the row
+        const unit_length = unit_area / row_thickness;  // Length of the unit along the row
         
         if (k < (children.length - 1)) {
             // Next unit
@@ -411,15 +411,17 @@ function squarify(children, x, y, container_width, container_height) {
             } else {
                 // Freeze the row and then recursively start a new row
                 if (shortest_length == container_width) {
-                    // Horizontal strip. To Do: Similar to vertical strip but across longest side
+                    // Horizontal strip
+                    let start_x = container_x;
+                    let start_y = container_y;
+                    let end_x;
+                    let end_y;
+
                     for (const unit in row) {
                         let row_unit_label = Object.keys(unit)[0];
 
-                        // To Do: Don't know what these values are
-                        let start_x = 0;
-                        let start_y = 0;
-                        let end_x = 0;
-                        let end_y = 0;
+                        end_x = start_x + unit_length;
+                        end_y = row_thickness;  // Fixed unit height
 
                         unit_rects.push({
                             [row_unit_label]:{
@@ -430,17 +432,17 @@ function squarify(children, x, y, container_width, container_height) {
                             }
                         });
 
-                        // Update drawing coords. To Do: Don't know what these values are
-                        start_x += 0;
-                        start_y += 0;
-                        end_x += 0;
-                        end_y += 0;
+                        // Update starting x by unit length
+                        start_x += unit_length;
                     }
 
-                    new_container_x = 0;
-                    new_container_y = 0;
+                    // Move new container vertically by row thickness
+                    new_x = container_x;
+                    new_y = container_y + row_thickness;  
+
                     new_container_width = container_width;
-                    new_container_height = container_height - row_width;
+                    new_container_height = container_height - row_thickness;
+
                     // Call squarify on remaining children units
                     return squarify(children.slice(k+1),  new_x, new_y, new_container_width, new_container_height);
                 } else {
@@ -448,11 +450,10 @@ function squarify(children, x, y, container_width, container_height) {
                     for (const unit in row) {
                         let row_unit_label = Object.keys(unit)[0];
 
-                        // To Do: Don't know what these values are
-                        let start_x = 0;
-                        let start_y = 0;
-                        let end_x = 0;
-                        let end_y = 0;
+                        let start_x = container_x;
+                        let start_y = container_y;
+                        let end_x = row_thickness;  // Fixed unit width
+                        let end_y = unit_length;
 
                         unit_rects.push({
                             [row_unit_label]:{
@@ -463,17 +464,17 @@ function squarify(children, x, y, container_width, container_height) {
                             }
                         });
 
-                        // Update drawing coords. To Do: Don't know what these values are
-                        start_x += 0;
-                        start_y += 0;
-                        end_x += 0;
-                        end_y += 0;
+                        // Update starting y by unit length
+                        start_y += unit_length;
                     }
 
-                    new_container_x = 0;
-                    new_container_y = 0;
-                    new_container_width = container_width - row_width;
+                    // Move new container horizontally by row thickness
+                    new_x = container_x + row_thickness;
+                    new_y = container_y;
+
+                    new_container_width = container_width - row_thickness;
                     new_container_height = container_height;
+
                     // Call squarify on remaining children units
                     return squarify(children.slice(k+1),  new_x, new_y, new_container_width, new_container_height);
                 }
