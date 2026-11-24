@@ -155,11 +155,11 @@ function getStockUnitColor(stock_return) {
 }
 
 
-function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, color) {
+function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, bg_color) {
     /* Render industry unit rectangle to canvas */
     
     // Draw unit
-    ctx.fillStyle = color;  // Dark Grey
+    ctx.fillStyle = bg_color;  // Set unit background color
     ctx.fillRect(start_x, start_y, end_x, end_y);
 
     // Draw label in header
@@ -182,11 +182,11 @@ function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, c
 }
 
 
-function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, color, stock_return) {
+function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, bg_color, stock_return) {
     /* Render stock unit rectangle to canvas */
     
     // Draw unit
-    ctx.fillStyle = color;  // Set unit color            
+    ctx.fillStyle = bg_color;  // Set unit background color            
     ctx.fillRect(start_x, start_y, end_x, end_y);
 
     const unit_area = (end_x - start_x) * (end_y - start_y);
@@ -342,20 +342,22 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
 //     }
 // }
 
-function get_worst_aspect_ratio(row, shortest_length) {
-    const row_area = row.flatMap(obj => Object.values(obj)).reduce((total, v) => total + v, 0);  // Sum of unit areas in the row
+function get_worst_aspect_ratio(row_areas, shortest_length) {
+    const row_total_area = row_areas.reduce((a, b) => a + b, 0);  // Sum of unit areas in the row
+    const max_unit_area = row_areas[0];  // First area item is the largest
+    const min_unit_area = row_areas[row_areas.length - 1];  // Last area item is the largest
+
     // Worst aspect ratio depends on the largest and smallest unit areas
-    return Math.max( ((shortest_length**2 * max_unit_area) / row_area**2), (row_area**2 / (shortest_length**2 * min_unit_area)) );
+    return Math.max( ((shortest_length**2 * max_unit_area) / row_total_area**2), (row_total_area**2 / (shortest_length**2 * min_unit_area)) );
 }
 
 
 function squarify(children, container_x, container_y, container_width, container_height) {
     /* Recursively minimise the aspect ratio of the unit's rectangle being drawn */
     const container_area = container_width * container_height;
-    const sum_weights = Object.values(children).reduce((a, b) => a + b, 0);
+    const sum_weights = children.reduce((total, obj) => total + Object.values(obj)[0], 0);
     
     const shortest_length = Math.min(container_width, container_height);
-    let worst_aspect_ratio = Infinity;
 
     let max_unit_area = 0;
     let min_unit_area = Infinity;
@@ -374,54 +376,63 @@ function squarify(children, container_x, container_y, container_width, container
         }        
     }
     
-    let row = [];
+    let row_areas = [];  // Stores unit areas in a row
+    let labels = [];  // Stores unit labels
     let unit_rects = [];
 
     // Get each child unit from a tree structure. Start from the second child
     for (let k=0; k < children.length; k++) {
         const unit_label = Object.keys(children[k])[0];
-        
         const unit_weight = Object.values(children[k])[0];
+
         // Area of the unit is the weight proportional to the container
         const unit_area = unit_weight * container_area / sum_weights;
 
-        if (row.length == 0) {row.push({[unit_label]: unit_area})}  // Initialize a new row with the first child
+        if (row_areas.length == 0) {
+            // Initialize a new row with the first unit
+            row_areas.push(unit_area);
+            labels.push(unit_label);
+        }
         
-        const row_area = row.flatMap(obj => Object.values(obj)).reduce((total, v) => total + v, 0);  // Sum of unit areas in the row
-        const row_thickness = row_area / shortest_length;  // Thickness of the row
-
-        const unit_length = unit_area / row_thickness;  // Length of the unit along the row
+        const row_total_area = row_areas.reduce((a, b) => a + b, 0);  // Sum of unit areas in the row
+        const row_thickness = row_total_area / shortest_length;  // Thickness of the row
         
+        // Check if unit is not the last
         if (k < (children.length - 1)) {
-            // Next unit
-            const next_unit_label = Object.keys(children[k+1])[0];
-        
+            // Next unit      
+            const next_unit_label = Object.keys(children[k+1])[0]; 
             const next_unit_weight = Object.values(children[k+1])[0];
+
             // Area of the unit is the weight proportional to the container
             const next_unit_area = next_unit_weight * container_area / sum_weights;
 
-            new_row = structuredClone(row).push({[next_unit_label]: next_unit_area});
+            let new_row_areas = structuredClone(row_areas);
+            new_row_areas.push(next_unit_area);
 
-            current_worst_aspect_ratio = get_worst_aspect_ratio(row, shortest_length);
-            new_worst_aspect_ratio = get_worst_aspect_ratio(new_row, shortest_length);
+            const current_worst_aspect_ratio = get_worst_aspect_ratio(row_areas, shortest_length);
+            const new_worst_aspect_ratio = get_worst_aspect_ratio(new_row_areas, shortest_length);
 
+            // Check if new unit will make the aspect ratio lower
             if (new_worst_aspect_ratio <= current_worst_aspect_ratio) {
-                // Push current unit to row
-                row.push({[unit_label]: unit_area});                        
+                // Push next unit's area to row and store its label
+                row_areas.push(next_unit_area);
+                labels.push(next_unit_label);
             } else {
-                // Freeze the row and then recursively start a new row
+                console.log(k, row_areas, labels);
+                // Freeze the current row and then recursively start a new row
                 if (shortest_length == container_width) {
                     // Horizontal strip
                     let start_x = container_x;
                     let start_y = container_y;
                     let end_x;
-                    let end_y;
+                    let end_y = row_thickness;  // Fixed unit height
 
-                    for (const unit in row) {
-                        let row_unit_label = Object.keys(unit)[0];
+                    // For each item in the row
+                    for (let i=0; i < row_areas.length; i++) {
+                        const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
+                        const row_unit_label = labels[i];
 
                         end_x = start_x + unit_length;
-                        end_y = row_thickness;  // Fixed unit height
 
                         unit_rects.push({
                             [row_unit_label]:{
@@ -437,23 +448,28 @@ function squarify(children, container_x, container_y, container_width, container
                     }
 
                     // Move new container vertically by row thickness
-                    new_x = container_x;
-                    new_y = container_y + row_thickness;  
+                    const new_x = container_x;
+                    const new_y = container_y + row_thickness;  
 
-                    new_container_width = container_width;
-                    new_container_height = container_height - row_thickness;
+                    const new_container_width = container_width;
+                    const new_container_height = container_height - row_thickness;
 
                     // Call squarify on remaining children units
-                    return squarify(children.slice(k+1),  new_x, new_y, new_container_width, new_container_height);
+                    return squarify(children.slice(k+1), new_x, new_y, new_container_width, new_container_height);
                 } else {
                     // Vertical strip
-                    for (const unit in row) {
-                        let row_unit_label = Object.keys(unit)[0];
 
-                        let start_x = container_x;
-                        let start_y = container_y;
-                        let end_x = row_thickness;  // Fixed unit width
-                        let end_y = unit_length;
+                    let start_x = container_x;
+                    let start_y = container_y;
+                    let end_x = row_thickness;  // Fixed unit width
+                    let end_y;
+
+                    // For each item in the row
+                    for (let i=0; i < row_areas.length; i++) {
+                        const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
+                        const row_unit_label = labels[i];
+
+                        end_y = start_y + unit_length;
 
                         unit_rects.push({
                             [row_unit_label]:{
@@ -469,11 +485,11 @@ function squarify(children, container_x, container_y, container_width, container
                     }
 
                     // Move new container horizontally by row thickness
-                    new_x = container_x + row_thickness;
-                    new_y = container_y;
+                    const new_x = container_x + row_thickness;
+                    const new_y = container_y;
 
-                    new_container_width = container_width - row_thickness;
-                    new_container_height = container_height;
+                    const new_container_width = container_width - row_thickness;
+                    const new_container_height = container_height;
 
                     // Call squarify on remaining children units
                     return squarify(children.slice(k+1),  new_x, new_y, new_container_width, new_container_height);
@@ -481,8 +497,74 @@ function squarify(children, container_x, container_y, container_width, container
             }
             
         } else if (k == (children.length - 1)) {
-            // To Do: Last unit
-            return unit_rects;
+            /* Last unit in the row */
+
+            // Area of the unit is the remaining amount left in the container
+            const unit_area = container_area - row_total_area
+
+            // Push current unit's area to row and store its label
+            row_areas.push(unit_area);
+            labels.push(unit_label);            
+            
+            // Freeze the current row
+            if (shortest_length == container_width) {
+                // Horizontal strip
+                let start_x = container_x;
+                let start_y = container_y;
+                let end_x;
+                let end_y = row_thickness;  // Fixed unit height
+
+                // For each item in the row
+                for (let i=0; i < row_areas.length; i++) {
+                    const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
+                    const row_unit_label = labels[i];
+
+                    end_x = start_x + unit_length;
+
+                    unit_rects.push({
+                        [row_unit_label]:{
+                            'start_x': start_x,
+                            'start_y': start_y,
+                            'end_x': end_x,
+                            'end_y': end_y,
+                        }
+                    });
+
+                    // Update starting x by unit length
+                    start_x += unit_length;
+                }
+
+                return unit_rects;
+            } else {
+                // Vertical strip
+
+                let start_x = container_x;
+                let start_y = container_y;
+                let end_x = row_thickness;  // Fixed unit width
+                let end_y;
+
+                // For each item in the row
+                for (let i=0; i < row_areas.length; i++) {
+                    const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
+                    const row_unit_label = labels[i];
+
+                    end_y = start_y + unit_length;
+
+                    unit_rects.push({
+                        [row_unit_label]:{
+                            'start_x': start_x,
+                            'start_y': start_y,
+                            'end_x': end_x,
+                            'end_y': end_y,
+                        }
+                    });
+
+                    // Update starting y by unit length
+                    start_y += unit_length;
+                }
+
+                return unit_rects;
+            }
         }
     }
 }
@@ -497,17 +579,26 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
 
     The aspect ratio of these rectangles are minimised to be closer to a square, which is visually better for human sight
     */
-    
+    console.log("Allocation Data:", allocation_data);
+
     /* Industry unit rects */
     industry_allocation_list = Object.entries(allocation_data["industry_allocations"]).map(([key, value]) => ({ [key]: value }));
+    console.log("Industry allocation list:", industry_allocation_list);
     industry_unit_rects = squarify(industry_allocation_list, 0, 0, map_width, map_height);
-
+    console.log("Industry unit rects:", industry_unit_rects);
+    
     /* Stocks unit rects */
+    /*
     // For each industry, get the stocks unit rects
     for (const industry in allocation_data["stocks_allocations"]) {
         // Draw industry unit
-        // To Do: Enter actual arguments
-        drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, color);
+        
+        const start_x = industry_unit_rects[industry].start_x;
+        const start_y = industry_unit_rects[industry].start_y;
+        const end_x = industry_unit_rects[industry].end_x;
+        const end_y = industry_unit_rects[industry].end_y;
+        const bg_color = "#262931";  // Grey
+        drawIndustryUnit(ctx, industry, start_x, start_y, end_x, end_y, bg_color);
 
         stocks_allocation_list = Object.entries(allocation_data["stocks_allocations"][industry]).map(([key, value]) => ({ [key]: value }));
         stocks_unit_rects = squarify(stocks_allocation_list, 0, 0, map_width, map_height);
@@ -517,10 +608,15 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
             const stock_return = stock_returns[ticker_label];
 
             // Draw stock unit
-            // To Do: Enter actual arguments
-            drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, color, stock_return);
+            const start_x = stocks_unit_rects[industry].start_x;
+            const start_y = stocks_unit_rects[industry].start_y;
+            const end_x = stocks_unit_rects[industry].end_x;
+            const end_y = stocks_unit_rects[industry].end_y;
+            const bg_color = getStockUnitColor(stock_return);
+            drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, bg_color, stock_return);
         }
     }
+    */
     
     /*
     Example structure of unit_rects:
@@ -581,13 +677,11 @@ function main() {
     const stock_returns = fund_data["stocks_returns"];
     const allocation_data = getMarketCapAllocation(fund_market_caps);
 
-    console.log("Allocation Data:", allocation_data);
-
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
 
-    drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
-    //drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, canvas.width, canvas.height)
+    //drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
+    drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, canvas.width, canvas.height)
 };
 
 main();
