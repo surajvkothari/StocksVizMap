@@ -155,13 +155,13 @@ function getStockUnitColor(stock_return) {
 }
 
 
-function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, bg_color) {
+function drawIndustryUnit(ctx, industry_label, start_x, start_y, width, height, bg_color) {
     /* Render industry unit rectangle to canvas */
     
-    // Draw unit
+    // Draw unit    
     ctx.fillStyle = bg_color;  // Set unit background color
-    ctx.fillRect(start_x, start_y, end_x, end_y);
-
+    ctx.fillRect(start_x, start_y, width, height);
+    
     // Draw label in header
     const label_font_size = 14;
     ctx.font = `bold ${label_font_size}px Arial`;
@@ -171,8 +171,8 @@ function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, b
     const label_margin_left = 10;
     const label_margin_top = 10 + label_font_size;
 
-    const label_start_x = start_x + label_margin_left    
-    const label_start_y = start_y + label_margin_top  
+    const label_start_x = start_x + label_margin_left;    
+    const label_start_y = start_y + label_margin_top;
 
     ctx.fillText(industry_label, label_start_x, label_start_y);
 
@@ -182,22 +182,21 @@ function drawIndustryUnit(ctx, industry_label, start_x, start_y, end_x, end_y, b
 }
 
 
-function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, bg_color, stock_return) {
+function drawStockUnit(ctx, ticker_label, start_x, start_y, width, height, bg_color, stock_return) {
     /* Render stock unit rectangle to canvas */
     
     // Draw unit
     ctx.fillStyle = bg_color;  // Set unit background color            
-    ctx.fillRect(start_x, start_y, end_x, end_y);
+    ctx.fillRect(start_x, start_y, width, height);
 
-    const unit_area = (end_x - start_x) * (end_y - start_y);
-    
+    const unit_area = width * height;
 
     // Draw ticker label
    
     // Dynamic font size proportional to area
     const font_size_sf = 1000
     let ticker_font_size = Math.min(unit_area/font_size_sf, 50);  // Max font size: 50
-    if (ticker_font_size < 10) {ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
+    //if (ticker_font_size < 10) {ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
 
     ctx.font = `${ticker_font_size}px Arial`;
     ctx.fillStyle = "white";
@@ -213,7 +212,7 @@ function drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, bg_col
 
     // Draw stock return
     let returns_font_size = ticker_font_size - 10 // Slightly smaller than stock ticker label
-    if (returns_font_size < 10) {returns_font_size = 0;}  // Min font size: 10, otherwise hide label
+    //if (returns_font_size < 10) {returns_font_size = 0;}  // Min font size: 10, otherwise hide label
     
     ctx.font = `${returns_font_size}px Arial`;
     ctx.fillStyle = "white";
@@ -235,29 +234,14 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
     The rectangles will be arranged along a single axis: horizontally. This may cause smaller ones to be visually hard to see.
     */
     const total_map_area = map_width * map_height;
-
     
     let industry_unit_start_x;
     let industry_unit_start_y;
-    let industry_unit_end_x;
-    let industry_unit_end_y;
-
-    let industry_label_start_x;
-    let industry_label_start_y;
 
     let stocks_unit_start_x;
     let stocks_unit_start_y;
-    let stocks_unit_end_x;
-    let stocks_unit_end_y;
-
-    let stocks_ticker_start_x;
-    let stocks_ticker_start_y;
-
-    let stocks_return_start_x;
-    let stocks_return_start_y;
 
     /* Render industries */
-    
     industry_unit_start_x = industry_unit_start_y = 0;  // Intialise starting coords
 
     // For each industry unit (in descending order by market cap)
@@ -272,13 +256,10 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
         // Compute the height as remainder given the previous width
         const industry_unit_height = industry_unit_area / industry_unit_width;
 
-        industry_unit_end_x = industry_unit_width;
-        industry_unit_end_y = industry_unit_height;
-
         // Draw industry unit
         const industry_header_height = drawIndustryUnit(ctx, 
             industry, industry_unit_start_x, industry_unit_start_y, 
-            industry_unit_end_x, industry_unit_end_y, 
+            industry_unit_width, industry_unit_height, 
             "#262931"
         );
         
@@ -303,15 +284,12 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
             const stocks_unit_width = stocks_market_cap_allocation * industry_unit_width;
             // Compute the height as remainder given the previous width
             const stocks_unit_height = stocks_unit_area / stocks_unit_width;
-
-            stocks_unit_end_x = stocks_unit_start_x + stocks_unit_width;
-            stocks_unit_end_y = stocks_unit_start_y + stocks_unit_height;       
             
             const stock_return = stock_returns[stock];
             
             drawStockUnit(ctx, stock, 
                 stocks_unit_start_x, stocks_unit_start_y, 
-                stocks_unit_end_x, stocks_unit_end_y, 
+                stocks_unit_width, stocks_unit_height, 
                 getStockUnitColor(stock_return),
                 stock_return
             );
@@ -325,23 +303,6 @@ function drawMapSliceAndDice(ctx, allocation_data, stock_returns, map_width, map
 }
 
 
-// function getUnitAreas(allocation_data, map_width, map_height) {
-    
-    
-//     const total_map_area = map_width * map_height;
-
-//     let industry_unit_areas = {};
-
-//     // For each industry unit (in descending order by market cap)\\\
-//     for (const industry in allocation_data["industry_allocations"]) {
-//         const industry_market_cap_allocation = allocation_data["industry_allocations"][industry];
-        
-//         // Area of individual industry unit is proportional to total map area
-//         const industry_unit_area = industry_market_cap_allocation * total_map_area;
-//         industry_unit_areas[industry] = industry_unit_area;  // Store industry unit's area
-//     }
-// }
-
 function get_worst_aspect_ratio(row_areas, shortest_length) {
     const row_total_area = row_areas.reduce((a, b) => a + b, 0);  // Sum of unit areas in the row
     const max_unit_area = row_areas[0];  // First area item is the largest
@@ -352,8 +313,8 @@ function get_worst_aspect_ratio(row_areas, shortest_length) {
 }
 
 
-function squarify(children, container_x, container_y, container_width, container_height) {
-    /* Recursively minimise the aspect ratio of the unit's rectangle being drawn */
+function squarify(children, unit_rects, container_x, container_y, container_width, container_height) {
+    /* Recursively minimise the aspect ratio of the unit's rectangle being drawn */    
     const container_area = container_width * container_height;
     const sum_weights = children.reduce((total, obj) => total + Object.values(obj)[0], 0);
     
@@ -378,7 +339,6 @@ function squarify(children, container_x, container_y, container_width, container
     
     let row_areas = [];  // Stores unit areas in a row
     let labels = [];  // Stores unit labels
-    let unit_rects = [];
 
     // Get each child unit from a tree structure. Start from the second child
     for (let k=0; k < children.length; k++) {
@@ -418,34 +378,29 @@ function squarify(children, container_x, container_y, container_width, container
                 row_areas.push(next_unit_area);
                 labels.push(next_unit_label);
             } else {
-                console.log(k, row_areas, labels);
                 // Freeze the current row and then recursively start a new row
                 if (shortest_length == container_width) {
                     // Horizontal strip
                     let start_x = container_x;
                     let start_y = container_y;
-                    let end_x;
-                    let end_y = row_thickness;  // Fixed unit height
 
                     // For each item in the row
                     for (let i=0; i < row_areas.length; i++) {
-                        const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
+                        const unit_width = row_areas[i] / row_thickness;
                         const row_unit_label = labels[i];
-
-                        end_x = start_x + unit_length;
 
                         unit_rects.push({
                             [row_unit_label]:{
                                 'start_x': start_x,
                                 'start_y': start_y,
-                                'end_x': end_x,
-                                'end_y': end_y,
+                                'width': unit_width,
+                                'height': row_thickness,  // Unit height is fixed by row thickness
                             }
                         });
 
                         // Update starting x by unit length
-                        start_x += unit_length;
-                    }
+                        start_x += unit_width;
+                    }                    
 
                     // Move new container vertically by row thickness
                     const new_x = container_x;
@@ -455,33 +410,28 @@ function squarify(children, container_x, container_y, container_width, container
                     const new_container_height = container_height - row_thickness;
 
                     // Call squarify on remaining children units
-                    return squarify(children.slice(k+1), new_x, new_y, new_container_width, new_container_height);
+                    return squarify(children.slice(k+1), unit_rects, new_x, new_y, new_container_width, new_container_height);
                 } else {
                     // Vertical strip
-
                     let start_x = container_x;
                     let start_y = container_y;
-                    let end_x = row_thickness;  // Fixed unit width
-                    let end_y;
 
                     // For each item in the row
                     for (let i=0; i < row_areas.length; i++) {
-                        const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
+                        const unit_height = row_areas[i] / row_thickness;
                         const row_unit_label = labels[i];
-
-                        end_y = start_y + unit_length;
 
                         unit_rects.push({
                             [row_unit_label]:{
                                 'start_x': start_x,
                                 'start_y': start_y,
-                                'end_x': end_x,
-                                'end_y': end_y,
+                                'width': row_thickness,  // Unit width is fixed by row thickness
+                                'height': unit_height,
                             }
                         });
 
                         // Update starting y by unit length
-                        start_y += unit_length;
+                        start_y += unit_height;
                     }
 
                     // Move new container horizontally by row thickness
@@ -492,13 +442,12 @@ function squarify(children, container_x, container_y, container_width, container
                     const new_container_height = container_height;
 
                     // Call squarify on remaining children units
-                    return squarify(children.slice(k+1),  new_x, new_y, new_container_width, new_container_height);
+                    return squarify(children.slice(k+1), unit_rects, new_x, new_y, new_container_width, new_container_height);
                 }
             }
             
         } else if (k == (children.length - 1)) {
             /* Last unit in the row */
-
             // Area of the unit is the remaining amount left in the container
             const unit_area = container_area - row_total_area
 
@@ -511,58 +460,43 @@ function squarify(children, container_x, container_y, container_width, container
                 // Horizontal strip
                 let start_x = container_x;
                 let start_y = container_y;
-                let end_x;
-                let end_y = row_thickness;  // Fixed unit height
 
-                // For each item in the row
-                for (let i=0; i < row_areas.length; i++) {
-                    const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
-                    const row_unit_label = labels[i];
+                const unit_width = row_areas[0] / row_thickness;
+                const row_unit_label = labels[0];
 
-                    end_x = start_x + unit_length;
+                unit_rects.push({
+                    [row_unit_label]:{
+                        'start_x': start_x,
+                        'start_y': start_y,
+                        'width': unit_width,
+                        'height': row_thickness,  // Unit height is fixed by row thickness
+                    }
+                });
 
-                    unit_rects.push({
-                        [row_unit_label]:{
-                            'start_x': start_x,
-                            'start_y': start_y,
-                            'end_x': end_x,
-                            'end_y': end_y,
-                        }
-                    });
-
-                    // Update starting x by unit length
-                    start_x += unit_length;
-                }
-
+                // Update starting x by unit length
+                start_x += unit_width;
+                
                 return unit_rects;
             } else {
                 // Vertical strip
-
                 let start_x = container_x;
                 let start_y = container_y;
-                let end_x = row_thickness;  // Fixed unit width
-                let end_y;
 
-                // For each item in the row
-                for (let i=0; i < row_areas.length; i++) {
-                    const unit_length = row_areas[i] / row_thickness;  // Length of the unit along the row
-                    const row_unit_label = labels[i];
+                const unit_height = row_areas[0] / row_thickness;
+                const row_unit_label = labels[0];
 
-                    end_y = start_y + unit_length;
+                unit_rects.push({
+                    [row_unit_label]:{
+                        'start_x': start_x,
+                        'start_y': start_y,
+                        'width': row_thickness,  // Unit width is fixed by row thickness
+                        'height': unit_height,
+                    }
+                });
 
-                    unit_rects.push({
-                        [row_unit_label]:{
-                            'start_x': start_x,
-                            'start_y': start_y,
-                            'end_x': end_x,
-                            'end_y': end_y,
-                        }
-                    });
-
-                    // Update starting y by unit length
-                    start_y += unit_length;
-                }
-
+                // Update starting y by unit length
+                start_y += unit_height;
+            
                 return unit_rects;
             }
         }
@@ -579,96 +513,67 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
 
     The aspect ratio of these rectangles are minimised to be closer to a square, which is visually better for human sight
     */
-    console.log("Allocation Data:", allocation_data);
-
     /* Industry unit rects */
     industry_allocation_list = Object.entries(allocation_data["industry_allocations"]).map(([key, value]) => ({ [key]: value }));
-    console.log("Industry allocation list:", industry_allocation_list);
-    industry_unit_rects = squarify(industry_allocation_list, 0, 0, map_width, map_height);
-    console.log("Industry unit rects:", industry_unit_rects);
     
-    /* Stocks unit rects */
-    /*
+    let industry_unit_rects = [];
+    // Initialise at (0,0) on the container of size (map_width, map_height)
+    industry_unit_rects = squarify(industry_allocation_list, industry_unit_rects, 
+        0, 0, 
+        map_width, map_height
+    );
+    
+    industry_unit_rects = Object.assign({}, ...industry_unit_rects);  // Unwrap list of unit rect objects
+    
     // For each industry, get the stocks unit rects
     for (const industry in allocation_data["stocks_allocations"]) {
         // Draw industry unit
-        
         const start_x = industry_unit_rects[industry].start_x;
         const start_y = industry_unit_rects[industry].start_y;
-        const end_x = industry_unit_rects[industry].end_x;
-        const end_y = industry_unit_rects[industry].end_y;
+        const industry_unit_width = industry_unit_rects[industry].width;
+        const industry_unit_height = industry_unit_rects[industry].height;
         const bg_color = "#262931";  // Grey
-        drawIndustryUnit(ctx, industry, start_x, start_y, end_x, end_y, bg_color);
 
+        const industry_header_height = drawIndustryUnit(ctx, industry, 
+            start_x, start_y, 
+            industry_unit_width, industry_unit_height, 
+            bg_color
+        );
+
+        /* Stocks unit rects */
+        // Add margin space for industry header
+        const stocks_region_area = industry_unit_width * (industry_unit_height - industry_header_height)  // Region where stocks are rendered is below the header
+
+        let stocks_unit_rects = [];
+        // Get stocks for the current industry
         stocks_allocation_list = Object.entries(allocation_data["stocks_allocations"][industry]).map(([key, value]) => ({ [key]: value }));
-        stocks_unit_rects = squarify(stocks_allocation_list, 0, 0, map_width, map_height);
-
-        for (const stock of stock_rects[industry]) {
-            const ticker_label = Object.keys(stock)[0];
-            const stock_return = stock_returns[ticker_label];
+        // The current industry's width and height form the container for the stocks
+        stocks_unit_rects = squarify(stocks_allocation_list, stocks_unit_rects, 
+            start_x, start_y+industry_header_height, 
+            industry_unit_width, (industry_unit_height - industry_header_height)
+        );
+        
+        stocks_unit_rects = Object.assign({}, ...stocks_unit_rects);  // Unwrap list of unit rect objects
+        
+        
+        for (const stock_ticker in stocks_unit_rects) {
+            const stock_return = stock_returns[stock_ticker];
 
             // Draw stock unit
-            const start_x = stocks_unit_rects[industry].start_x;
-            const start_y = stocks_unit_rects[industry].start_y;
-            const end_x = stocks_unit_rects[industry].end_x;
-            const end_y = stocks_unit_rects[industry].end_y;
+            const start_x = stocks_unit_rects[stock_ticker].start_x;
+            const start_y = stocks_unit_rects[stock_ticker].start_y;
+            const stock_width = stocks_unit_rects[stock_ticker].width;
+            const stock_height = stocks_unit_rects[stock_ticker].height;
             const bg_color = getStockUnitColor(stock_return);
-            drawStockUnit(ctx, ticker_label, start_x, start_y, end_x, end_y, bg_color, stock_return);
+
+            drawStockUnit(ctx, stock_ticker, 
+                start_x, start_y, 
+                stock_width, stock_height, 
+                bg_color, 
+                stock_return
+            );
         }
     }
-    */
-    
-    /*
-    Example structure of unit_rects:
-    industry_unit_rects: {
-        "TECHNOLOGY": {
-            'start_x': 0,
-            'start_y': 0,
-            'end_x': 100,
-            'end_y': 100,
-        },
-        "ENERGY": {
-            'start_x': 100,
-            'start_y': 0,
-            'end_x': 200,
-            'end_y': 100,
-        },
-        . . .
-    }
-    stocks_unit_rects: {
-        "TECHNOLOGY": {
-            'AAPL': {
-                'start_x': 0,
-                'start_y': 0,
-                'end_x': 100,
-                'end_y': 100,
-            },
-            'NVDA': {
-                'start_x': 0,
-                'start_y': 0,
-                'end_x': 100,
-                'end_y': 100,
-            },
-            . . .
-        },
-        "FINANCIAL": {
-            'JPM': {
-                'start_x': 0,
-                'start_y': 0,
-                'end_x': 100,
-                'end_y': 100,
-            },
-            'BAC': {
-                'start_x': 0,
-                'start_y': 0,
-                'end_x': 100,
-                'end_y': 100,
-            },
-            . . .
-        },
-        . . .        
-    }
-    */
 }
 
 function main() {
