@@ -156,7 +156,7 @@ function drawIndustryUnit(ctx, industry_label, start_x, start_y, width, height, 
     
     // Draw unit    
     ctx.fillStyle = bg_color;  // Set unit background color
-    ctx.fillRect(Math.round(start_x), Math.round(start_y), Math.round(width), Math.round(height));
+    ctx.fillRect(start_x, start_y, width, height);
     
     // Draw label in header
     const label_font_size = 14;
@@ -183,7 +183,7 @@ function drawStockUnit(ctx, ticker_label, start_x, start_y, width, height, bg_co
     
     // Draw unit
     ctx.fillStyle = bg_color;  // Set unit background color            
-    ctx.fillRect(Math.round(start_x), Math.round(start_y), Math.round(width), Math.round(height));
+    ctx.fillRect(start_x, start_y, width, height);
 
     const unit_area = width * height;
 
@@ -528,11 +528,12 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
     
     // For each industry, get the stocks unit rects
     for (const industry in allocation_data["stocks_allocations"]) {
+        let border_size = 2;
         // Draw industry unit
-        const start_x = industry_unit_rects[industry].start_x;
-        const start_y = industry_unit_rects[industry].start_y;
-        const industry_unit_width = industry_unit_rects[industry].width;
-        const industry_unit_height = industry_unit_rects[industry].height;
+        const start_x = industry_unit_rects[industry].start_x + border_size;
+        const start_y = industry_unit_rects[industry].start_y + border_size;
+        const industry_unit_width = industry_unit_rects[industry].width - border_size;
+        const industry_unit_height = industry_unit_rects[industry].height - border_size;
         const bg_color = "#262931";  // Dark grey
 
         const industry_header_height = drawIndustryUnit(ctx, industry, 
@@ -555,15 +556,15 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
         );
         
         stocks_unit_rects = Object.assign({}, ...stocks_unit_rects);  // Unwrap list of unit rect objects
-        
         for (const stock_ticker in stocks_unit_rects) {
+            border_size = 1;
             const stock_return = stock_returns[stock_ticker];
 
             // Draw stock unit
-            const start_x = stocks_unit_rects[stock_ticker].start_x;
-            const start_y = stocks_unit_rects[stock_ticker].start_y;
-            const stock_width = stocks_unit_rects[stock_ticker].width;
-            const stock_height = stocks_unit_rects[stock_ticker].height;
+            const start_x = stocks_unit_rects[stock_ticker].start_x + border_size;
+            const start_y = stocks_unit_rects[stock_ticker].start_y + border_size;
+            const stock_width = stocks_unit_rects[stock_ticker].width - border_size;
+            const stock_height = stocks_unit_rects[stock_ticker].height - border_size;
             const bg_color = getStockUnitColor(stock_return);
 
             drawStockUnit(ctx, stock_ticker, 
