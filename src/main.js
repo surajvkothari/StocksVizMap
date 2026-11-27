@@ -156,7 +156,7 @@ function drawIndustryUnit(ctx, industry_label, start_x, start_y, width, height, 
     
     // Draw unit    
     ctx.fillStyle = bg_color;  // Set unit background color
-    ctx.fillRect(start_x, start_y, width, height);
+    ctx.fillRect(Math.round(start_x), Math.round(start_y), Math.round(width), Math.round(height));
     
     // Draw label in header
     const label_font_size = 14;
@@ -183,7 +183,7 @@ function drawStockUnit(ctx, ticker_label, start_x, start_y, width, height, bg_co
     
     // Draw unit
     ctx.fillStyle = bg_color;  // Set unit background color            
-    ctx.fillRect(start_x, start_y, width, height);
+    ctx.fillRect(Math.round(start_x), Math.round(start_y), Math.round(width), Math.round(height));
 
     const unit_area = width * height;
 
