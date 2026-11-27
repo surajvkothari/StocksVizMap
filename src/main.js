@@ -45,22 +45,22 @@ function get_SPX_data() {
 
     // Daily returns (%). Note: fictional values
     const stocks_returns = {
-        "AAPL": 0.73,
-        "NVDA": -6.90,
-        "MSFT": 0,
-        "JPM": 1.0,
-        "BAC": -1.0,
-        "WFC": 2.0,
+        "AAPL": 1.00,
+        "NVDA": -3.50,
+        "MSFT": 0.0,
+        "JPM": 0.5,
+        "BAC": -2.2,
+        "WFC": 1.0,
         "LLY": 1.0,
         "JNJ": 0.5,
-        "ABBV": 1.5,
-        "GE": -3.5,
+        "ABBV": -1.4,
+        "GE": 2.9,
         "CAT": 0.8,
         "BA": 0.0,
         "XOM": 0.6,
         "CVX": 4.5,
         "MCD": 1.20,
-        "KO": 3.00,
+        "KO": 3.05,
     }
 
     const data = {
@@ -79,13 +79,9 @@ function get_UKX_data() {/* Add later */}
 
 
 function getFundData(fundID) {
-    if (fundID === "SPX") {
-        return get_SPX_data();
-    } else if (fundID === "NDX") {
-        return get_NDX_data();
-    } else if (fundID === "UKX") {
-        return get_UKX_data();
-    }
+    if (fundID === "SPX") {return get_SPX_data();} 
+    else if (fundID === "NDX") {return get_NDX_data();} 
+    else if (fundID === "UKX") {return get_UKX_data();}
 }
 
 
@@ -138,20 +134,20 @@ function getMarketCapAllocation(fund_market_caps) {
         "stocks_allocations": sorted_stocks_allocations
     }
 
-    return allocation_data; 
-   
+    return allocation_data;
 }
 
 
 function getStockUnitColor(stock_return) {
     /* Color map based on stock returns */
-    if (stock_return > 0) {
-        return "green";
-    } else if (stock_return < 0) {
-        return "red";
-    } else {
-        return "grey";
-    }
+
+    if (stock_return <= -3) {return "#f63538";}  // Deep red
+    else if (stock_return <= -2) {return "#bf4045";}  // Red
+    else if (stock_return <= -1) {return "#8b444e";}  // Light red
+    else if (stock_return >= 1) {return "#35764e";}  // Light green
+    else if (stock_return >= 2) {return "#2f9e4f";}  // Green
+    else if (stock_return >= 3) {return "#30cc5a";}  // Bright green
+    else {return "#414554";}    // Grey (0%)
 }
 
 
@@ -165,7 +161,7 @@ function drawIndustryUnit(ctx, industry_label, start_x, start_y, width, height, 
     // Draw label in header
     const label_font_size = 14;
     ctx.font = `bold ${label_font_size}px Arial`;
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "#F7F7F7";  // Light white
 
     // Margin space for header
     const label_margin_left = 10;
@@ -198,8 +194,13 @@ function drawStockUnit(ctx, ticker_label, start_x, start_y, width, height, bg_co
     let ticker_font_size = Math.min(unit_area/font_size_sf, 50);  // Max font size: 50
     //if (ticker_font_size < 10) {ticker_font_size = 0;}  // Min font size: 10, otherwise hide label
 
-    ctx.font = `${ticker_font_size}px Arial`;
-    ctx.fillStyle = "white";
+    ctx.font = `${ticker_font_size}px Tahoma`;
+    ctx.fillStyle = "#F7F7F7";  // Light white
+    
+    // Text shadow
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.shadowColor = "#000";
 
     // Margin for ticker and return labels
     const ticker_margin_left = 10;
@@ -214,8 +215,12 @@ function drawStockUnit(ctx, ticker_label, start_x, start_y, width, height, bg_co
     let returns_font_size = ticker_font_size - 10 // Slightly smaller than stock ticker label
     //if (returns_font_size < 10) {returns_font_size = 0;}  // Min font size: 10, otherwise hide label
     
-    ctx.font = `${returns_font_size}px Arial`;
+    ctx.font = `${returns_font_size}px Tahoma`;
     ctx.fillStyle = "white";
+    // Text shadow
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = "#000";
 
     const return_start_x = ticker_start_x
     const return_start_y = ticker_start_y + ticker_font_size
@@ -508,6 +513,7 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
 
     The aspect ratio of these rectangles are minimised to be closer to a square, which is visually better for human sight
     */
+
     /* Industry unit rects */
     industry_allocation_list = Object.entries(allocation_data["industry_allocations"]).map(([key, value]) => ({ [key]: value }));
     
@@ -527,7 +533,7 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
         const start_y = industry_unit_rects[industry].start_y;
         const industry_unit_width = industry_unit_rects[industry].width;
         const industry_unit_height = industry_unit_rects[industry].height;
-        const bg_color = "#262931";  // Grey
+        const bg_color = "#262931";  // Dark grey
 
         const industry_header_height = drawIndustryUnit(ctx, industry, 
             start_x, start_y, 
@@ -550,7 +556,6 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
         
         stocks_unit_rects = Object.assign({}, ...stocks_unit_rects);  // Unwrap list of unit rect objects
         
-        
         for (const stock_ticker in stocks_unit_rects) {
             const stock_return = stock_returns[stock_ticker];
 
@@ -571,6 +576,7 @@ function drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, map_width
     }
 }
 
+
 function main() {
     const fund_data = getFundData("SPX");
     const fund_market_caps = fund_data["market_caps"];
@@ -583,5 +589,6 @@ function main() {
     //drawMapSliceAndDice(ctx, allocation_data, stock_returns, canvas.width, canvas.height);
     drawMapSquarifiedTreeMap(ctx, allocation_data, stock_returns, canvas.width, canvas.height)
 };
+
 
 main();
