@@ -378,11 +378,10 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
                 row_areas.push(next_unit_area);
                 labels.push(next_unit_label);
             } else {
-                // Freeze the current row and then recursively start a new row
+                /* Lay out the current row */
                 if (shortest_length == container_width) {
                     // Horizontal strip
                     let start_x = container_x;
-                    let start_y = container_y;
 
                     // For each item in the row
                     for (let i=0; i < row_areas.length; i++) {
@@ -392,7 +391,7 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
                         unit_rects.push({
                             [row_unit_label]:{
                                 'start_x': start_x,
-                                'start_y': start_y,
+                                'start_y': container_y,  // Unit starting y-coord is fixed
                                 'width': unit_width,
                                 'height': row_thickness,  // Unit height is fixed by row thickness
                             }
@@ -402,18 +401,16 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
                         start_x += unit_width;
                     }                    
 
-                    // Move new container vertically by row thickness
                     const new_x = container_x;
-                    const new_y = container_y + row_thickness;  
+                    const new_y = container_y + row_thickness;  // Move new container vertically by row thickness
 
                     const new_container_width = container_width;
                     const new_container_height = container_height - row_thickness;
 
-                    // Call squarify on remaining children units
+                    // Call squarify recursively on remaining children units
                     return squarify(children.slice(k+1), unit_rects, new_x, new_y, new_container_width, new_container_height);
                 } else {
                     // Vertical strip
-                    let start_x = container_x;
                     let start_y = container_y;
 
                     // For each item in the row
@@ -423,7 +420,7 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
 
                         unit_rects.push({
                             [row_unit_label]:{
-                                'start_x': start_x,
+                                'start_x': container_x,  // Unit starting x-coord is fixed
                                 'start_y': start_y,
                                 'width': row_thickness,  // Unit width is fixed by row thickness
                                 'height': unit_height,
@@ -434,20 +431,20 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
                         start_y += unit_height;
                     }
 
-                    // Move new container horizontally by row thickness
-                    const new_x = container_x + row_thickness;
+                    const new_x = container_x + row_thickness;  // Move new container horizontally by row thickness
                     const new_y = container_y;
 
                     const new_container_width = container_width - row_thickness;
                     const new_container_height = container_height;
 
-                    // Call squarify on remaining children units
+                    // Call squarify recursively on remaining children units
                     return squarify(children.slice(k+1), unit_rects, new_x, new_y, new_container_width, new_container_height);
                 }
             }
             
         } else if (k == (children.length - 1)) {
             /* Last unit in the row */
+            
             // Area of the unit is the remaining amount left in the container
             const unit_area = container_area - row_total_area
 
@@ -455,11 +452,10 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
             row_areas.push(unit_area);
             labels.push(unit_label);            
             
-            // Freeze the current row
+            /* Lay out the current row */
             if (shortest_length == container_width) {
                 // Horizontal strip
                 let start_x = container_x;
-                let start_y = container_y;
 
                 const unit_width = row_areas[0] / row_thickness;
                 const row_unit_label = labels[0];
@@ -467,7 +463,7 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
                 unit_rects.push({
                     [row_unit_label]:{
                         'start_x': start_x,
-                        'start_y': start_y,
+                        'start_y': container_y,  // Unit starting y-coord is fixed
                         'width': unit_width,
                         'height': row_thickness,  // Unit height is fixed by row thickness
                     }
@@ -479,7 +475,6 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
                 return unit_rects;
             } else {
                 // Vertical strip
-                let start_x = container_x;
                 let start_y = container_y;
 
                 const unit_height = row_areas[0] / row_thickness;
@@ -487,7 +482,7 @@ function squarify(children, unit_rects, container_x, container_y, container_widt
 
                 unit_rects.push({
                     [row_unit_label]:{
-                        'start_x': start_x,
+                        'start_x': container_x,  // Unit starting x-coord is fixed
                         'start_y': start_y,
                         'width': row_thickness,  // Unit width is fixed by row thickness
                         'height': unit_height,
